@@ -159,7 +159,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-        App\Providers\TeamSpeakServiceProvider::class
+        App\Providers\TsServiceProvider::class
 
     ],
 
@@ -210,7 +210,7 @@ return [
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
 
-        'Teamspeak' => App\Facades\Teamspeak::class
+        'TS' => App\Facades\TS::class
     ],
 
 ];

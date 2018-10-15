@@ -22,7 +22,8 @@
     "autoload": {
         "classmap": [
             "database/seeds",
-            "database/factories"
+            "database/factories",
+            "vendor/planetteamspeak/ts3-php-framework/libraries"
         ],
         "psr-4": {
             "App\\": "app/"

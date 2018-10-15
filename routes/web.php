@@ -15,4 +15,12 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::resource('servers', 'TsServerController')->names([
+    'list' => 'serverlist',
+    'show' => 'server'
+]);
+
 Route::get('/poke', 'PokeController@poke');
+Auth::routes();
+
+Route::get('/home', 'HomeController@index')->name('home');
