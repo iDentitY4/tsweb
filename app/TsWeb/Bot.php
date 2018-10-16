@@ -2,6 +2,7 @@
 
 namespace App\TsWeb;
 
+use App\Connection as ConnectionModel;
 use Illuminate\Events\Dispatcher;
 
 class Bot
@@ -19,6 +20,11 @@ class Bot
      * @var \Illuminate\Contracts\Events\Dispatcher
      */
     protected $events;
+
+    /**
+     * @var
+     */
+    protected $connection;
 
     /**
      * Indicates if the worker should exit.
@@ -50,23 +56,31 @@ class Bot
     /**
      * Listen to the given queue in a loop.
      *
-     * @param  string  $connectionName
+     * @param  string  $driver
      * @param  \App\TsWeb\BotOptions  $options
      * @return void
      */
-    public function daemon($connectionName, BotOptions $options)
+    public function daemon($driver, BotOptions $options)
     {
         if ($this->supportsAsyncSignals()) {
             $this->listenForSignals();
         }
 
-        //$lastRestart = $this->getTimestampOfLastQueueRestart();
+        //Find connection model
+        $connectionModel = ConnectionModel::where('driver', $driver)->firstOrFail();
+
+        // Connect to host
+        $this->connection = $this->manager->connection($connectionModel);
+
+        if($server = $connectionModel->server) {
+            $this->connection->serverSelectByPort($server->port);
+        }
 
         while (true) {
             // Before reserving any jobs, we will make sure this queue is not paused and
             // if it is we will just pause this worker for a given amount of time and
             // make sure we do not need to kill this worker process off completely.
-            if (! $this->daemonShouldRun($options, $connectionName)) {
+            if (! $this->daemonShouldRun($options, $driver)) {
                 $this->pauseBot($options);
 
                 continue;
@@ -79,7 +93,7 @@ class Bot
             // First, we will attempt to get the next job off of the queue. We will also
             // register the timeout handler and reset the alarm for this job so it is
             // not stuck in a frozen state forever. Then, we can fire off this job.
-            $clients = $this->manager->connection($connectionName)->getNode()->clientListDb();
+            $clients = $this->connection->getNode()->clientListDb();
 
 
             // If the daemon should run (not in maintenance mode, etc.), then we can run
@@ -91,7 +105,7 @@ class Bot
                 $this->sleep($options->sleep);
             }*/
             $this->events->dispatch(new Events\ClientList(
-                $connectionName, $clients
+                $driver, $clients
             ));
 
             // Finally, we will check to see if we have exceeded our memory limits or if

@@ -2,6 +2,7 @@
 
 namespace App\TsWeb;
 
+use App\Connection as ConnectionModel;
 use Closure;
 use Illuminate\Foundation\Application;
 use InvalidArgumentException;
@@ -44,45 +45,49 @@ class TsManager implements FactoryContract
     /**
      * Determine if the driver is connected.
      *
-     * @param  string  $name
+     * @param  ConnectionModel $connectionModel
      * @return bool
      */
-    public function connected($name = null)
+    public function connected(ConnectionModel $connectionModel = null)
     {
-        return isset($this->connections[$name ?: $this->getDefaultDriver()]);
+        $connectionModel = $connectionModel ?: $this->getDefaultConnectionModel();
+        $driver = $connectionModel->driver;
+
+        return isset($this->connections[$driver]);
     }
 
     /**
      * Resolve a queue connection instance.
      *
-     * @param  string  $name
+     * @param  ConnectionModel  $connectionModel
      * @return \App\Contracts\TsWeb\Connection
      */
-    public function connection($name = null)
+    public function connection(ConnectionModel $connectionModel = null)
     {
-        $name = $name ?: $this->getDefaultDriver();
+        $connectionModel = $connectionModel ?: $this->getDefaultConnectionModel();
+
+        $driver = $connectionModel->driver;
 
         // If the connection has not been resolved yet we will resolve it now as all
         // of the connections are resolved when they are actually needed so we do
         // not make any unnecessary connection to the various queue end-points.
-        if (! isset($this->connections[$name])) {
-            $this->connections[$name] = $this->resolve($name);
-
-            //$this->connections[$name]->setContainer($this->app);
+        if (! isset($this->connections[$driver])) {
+            $this->connections[$driver] = $this->resolve($connectionModel);
         }
 
-        return $this->connections[$name];
+        return $this->connections[$driver];
     }
 
     /**
      * Resolve a queue connection.
      *
-     * @param  string  $name
+     * @param  ConnectionModel  $connectionModel
      * @return \Illuminate\Contracts\Queue\Queue
      */
-    protected function resolve($name)
+    protected function resolve(ConnectionModel $connectionModel)
     {
-        $config = $this->getConfig($name);
+        $config = $connectionModel->getAttributes();
+        $config['host'] = $connectionModel->host->address;
 
         return $this->getConnector($config['driver'])
                         ->connect($config);
@@ -147,22 +152,11 @@ class TsManager implements FactoryContract
     /**
      * Get the name of the default queue connection.
      *
-     * @return string
+     * @return ConnectionModel
      */
-    public function getDefaultDriver()
+    public function getDefaultConnectionModel()
     {
-        return $this->app['config']['ts.default'];
-    }
-
-    /**
-     * Set the name of the default queue connection.
-     *
-     * @param  string  $name
-     * @return void
-     */
-    public function setDefaultDriver($name)
-    {
-        $this->app['config']['ts.default'] = $name;
+        return ConnectionModel::default();
     }
 
     /**

@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateTsServersTable extends Migration
+class CreateConnectionsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,11 +13,12 @@ class CreateTsServersTable extends Migration
      */
     public function up()
     {
-        Schema::create('ts_servers', function (Blueprint $table) {
+        Schema::create('connections', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('adapter');
-            $table->string('host', 253);
-            $table->integer('port');
+            $table->integer('host_id')->unsigned();
+            $table->integer('server_id')->unsigned()->nullable();
+            $table->string('driver');
+            $table->string('port');
             $table->string('username')->nullable();
             $table->string('password')->nullable();
             $table->timestamps();
@@ -31,6 +32,6 @@ class CreateTsServersTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('ts_servers');
+        Schema::dropIfExists('connections');
     }
 }
